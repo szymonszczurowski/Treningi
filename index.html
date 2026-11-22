@@ -2,7 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#121211">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -278,6 +278,30 @@
 
 <script>
 "use strict";
+
+/* Blokada przybliżania podwójnym stuknięciem (iPhone/Android, także po dodaniu do ekranu głównego).
+   Drugie szybkie stuknięcie nie przybliża strony – zamiast tego działa jak zwykłe kliknięcie. */
+(() => {
+  let lastEnd = 0, lastX = 0, lastY = 0;
+  document.addEventListener("touchend", e => {
+    if (e.touches.length || e.changedTouches.length !== 1) return;
+    const t = e.changedTouches[0], now = Date.now();
+    const quick = now - lastEnd < 350 && Math.abs(t.clientX - lastX) < 40 && Math.abs(t.clientY - lastY) < 40;
+    lastEnd = now; lastX = t.clientX; lastY = t.clientY;
+    if (!quick) return;
+    const el = e.target instanceof Element ? e.target : null;
+    if (!el) return;
+    if (el.closest("select")) return; // listy rozwijane zostawiamy przeglądarce
+    e.preventDefault();
+    const field = el.closest('input:not([type="checkbox"]):not([type="file"]), textarea');
+    if (field) { field.focus(); return; }
+    const target = el.closest('button, a, summary, label, input[type="checkbox"]');
+    if (target && !target.disabled) target.click();
+  }, { passive: false });
+  document.addEventListener("dblclick", e => e.preventDefault(), { passive: false });
+  // iOS: gesty przybliżania w Safari
+  document.addEventListener("gesturestart", e => { if (e.scale === 1) e.preventDefault(); }, { passive: false });
+})();
 
 /* =====================================================================
    DOMYŚLNY PLAN
